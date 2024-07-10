@@ -31,6 +31,6 @@ def get_chart():
                     , labels_jobcount = labels_jobcount, data_jobcount = data_jobcount\
                       , labels_token = labels_token, data_token = data_token)
 
-# dummy change
 if __name__ == '__main__':  
    app.run()
+
