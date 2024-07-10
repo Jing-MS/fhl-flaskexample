@@ -1,14 +1,9 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from flask import (Flask, render_template, request)
 
-app = FastAPI()
+app = Flask(__name__)
 
-# Set up Jinja2 templates. The directory 'templates' should be in the same directory as this script.
-templates = Jinja2Templates(directory="./templates")
-
-@app.get("/", response_class=HTMLResponse)
-async def get_chart(request: Request):
+@app.route("/")
+def get_chart():
     # Data to be passed to the template
     labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
     data = [12, 6, 3, 5, 12, 13, 9]
@@ -31,8 +26,11 @@ async def get_chart(request: Request):
     {"id": "9", "url": "https://example.com/job/9"},
     {"id": "10", "url": "https://example.com/job/10"}
   ]
-    return templates.TemplateResponse("index.html", {"request": request\
-                  , "labels": labels, "data": data, "jobs": jobs\
-                    , "labels_jobcount": labels_jobcount, "data_jobcount": data_jobcount\
-                      , "labels_token": labels_token, "data_token": data_token})
-    
+    return render_template("index.html", request = request\
+                  , labels = labels, data = data, jobs = jobs\
+                    , labels_jobcount = labels_jobcount, data_jobcount = data_jobcount\
+                      , labels_token = labels_token, data_token = data_token)
+
+if __name__ == '__main__':  
+   app.run()
+
