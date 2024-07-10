@@ -86,8 +86,8 @@ def GetQuery(metricname: str) -> str:
 def QueryTaskMonitoringLog(p: Params):
 
     ## authenticate
-    credential = DefaultAzureCredential() # after pushing to the Azure cloud, this function will use the MSI instead. Please remember to assign the masterreader's role to the MSI. 
-    #credential = ManagedIdentityCredential(client_id = "1133145e-4000-4719-957b-5abd09c56c48") # use a user-assigned managed identity
+    #credential = DefaultAzureCredential() # after pushing to the Azure cloud, this function will use the MSI instead. Please remember to assign the masterreader's role to the MSI. 
+    credential = ManagedIdentityCredential(client_id = "1133145e-4000-4719-957b-5abd09c56c48") # use a user-assigned managed identity
     logs_query_client = LogsQueryClient(credential)
     
     ## convert params
