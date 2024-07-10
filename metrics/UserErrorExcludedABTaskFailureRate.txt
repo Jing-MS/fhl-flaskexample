@@ -1,0 +1,16 @@
+AppEvents
+| extend logtime = todatetime(Properties.LogTime)
+| where logtime between (datetime("{starttime_str}") .. datetime("{endtime_str}"))
+| where Name in ("TaskSucceeded", "TaskFailed", "TaskCancelled") 
+| where Properties.WorkspaceId == "{workspaceid}"
+| where Properties.AnalysisType == "AB"
+| extend
+    DueToUserError = iff(tostring(Properties.ErrorCategory) contains "User Error", true, false),
+    taskId = tostring(Properties.AnalysisTaskId)
+| summarize arg_max(logtime, Name, DueToUserError) by taskId 
+| extend Day = startofday(logtime)
+| summarize 
+    UserErrorExcludedABTaskFailureRate = round(countif(Name == "TaskFailed" and not(DueToUserError)) * 100.0 / count(), 3)
+    by Day
+| order by Day asc
+
