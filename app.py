@@ -1,32 +1,36 @@
-import os
-
-from flask import (Flask, redirect, render_template, request,
-                   send_from_directory, url_for)
+from flask import (Flask, render_template, request)
 
 app = Flask(__name__)
 
+@app.route("/")
+def get_chart():
+    # Data to be passed to the template
+    labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
+    data = [12, 6, 3, 5, 12, 13, 9]
 
-@app.route('/')
-def index():
-   print('Request for index page received')
-   return render_template('index.html')
+    labels_jobcount = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
+    data_jobcount = [453, 416, 393, 512, 442, 413, 509]
 
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    labels_token = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
+    data_token = [3089, 4160, 3933, 5120, 4472, 4133, 5091]
 
-@app.route('/hello', methods=['POST'])
-def hello():
-   name = request.form.get('name')
+    jobs = [
+    {"id": "1", "url": "https://example.com/job/1"},
+    {"id": "2", "url": "https://example.com/job/2"},
+    {"id": "3", "url": "https://example.com/job/3"},
+    {"id": "4", "url": "https://example.com/job/4"},
+    {"id": "5", "url": "https://example.com/job/5"},
+    {"id": "6", "url": "https://example.com/job/6"},
+    {"id": "7", "url": "https://example.com/job/7"},
+    {"id": "8", "url": "https://example.com/job/8"},
+    {"id": "9", "url": "https://example.com/job/9"},
+    {"id": "10", "url": "https://example.com/job/10"}
+  ]
+    return render_template("index.html", {"request": request\
+                  , "labels": labels, "data": data, "jobs": jobs\
+                    , "labels_jobcount": labels_jobcount, "data_jobcount": data_jobcount\
+                      , "labels_token": labels_token, "data_token": data_token})
 
-   if name:
-       print('Request for hello page received with name=%s' % name)
-       return render_template('hello.html', name = name)
-   else:
-       print('Request for hello page received with no name or blank name -- redirecting')
-       return redirect(url_for('index'))
-
-
-if __name__ == '__main__':
+# dummy change
+if __name__ == '__main__':  
    app.run()
