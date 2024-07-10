@@ -1,18 +1,24 @@
 from flask import (Flask, render_template, request)
+from pydantic import BaseModel, field_validator
+from datetime import datetime, timedelta, timezone
+import uuid
+from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
+from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 
 app = Flask(__name__)
 
 @app.route("/")
 def get_chart():
     # Data to be passed to the template
-    labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
-    data = [12, 6, 3, 5, 12, 13, 9]
 
-    labels_jobcount = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
-    data_jobcount = [453, 416, 393, 512, 442, 413, 509]
+    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="UserErrorExcludedABTaskFailureRate", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    labels, data = QueryTaskMonitoringLog(p)
 
-    labels_token = ['January', 'February', 'March', 'April', 'May', 'June', 'July']
-    data_token = [3089, 4160, 3933, 5120, 4472, 4133, 5091]
+    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="ABTaskCancelRate", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    labels_jobcount, data_jobcount = QueryTaskMonitoringLog(p)
+
+    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="ABTaskE2ETime", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    labels_token, data_token = QueryTaskMonitoringLog(p)
 
     jobs = [
     {"id": "1", "url": "https://example.com/job/1"},
@@ -34,3 +40,82 @@ def get_chart():
 if __name__ == '__main__':  
    app.run()
 
+class Params(BaseModel):
+    workspaceid: str
+    metricname: str
+    starttime_str: str
+    endtime_str: str
+
+    @field_validator("workspaceid")
+    def validate_workspaceid(cls, value):
+        try:
+            uuid.UUID(value, version=4)
+        except ValueError:
+            raise ValueError(f"{value} is not a valid GUID")
+        return value
+
+    @field_validator("starttime_str")
+    def validate_starttime(cls, value):
+        try:
+            datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            raise ValueError(f"{value} does not match format '%Y-%m-%dT%H:%M:%S'")
+        return value
+    
+    @field_validator("endtime_str")
+    def validate_endtime(cls, value):
+        try:
+            datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            raise ValueError(f"{value} does not match format '%Y-%m-%dT%H:%M:%S'")
+        return value
+    
+    @field_validator("metricname")
+    def validate_metricname(cls, value):
+        try:
+            value in ("ABTaskE2ETime", "UserErrorExcludedABTaskFailureRate", "ABTaskCancelRate")
+        except ValueError:
+            raise ValueError(f"The metric {value} has not been defined yet.") 
+        return value
+
+def GetQuery(metricname: str) -> str:
+    with open(f".\metrics\{metricname}.txt", "r") as file:
+        query = file.read()
+    return query
+    
+def QueryTaskMonitoringLog(p: Params):
+
+    ## authenticate
+    credential = DefaultAzureCredential() # after pushing to the Azure cloud, this function will use the MSI instead. Please remember to assign the masterreader's role to the MSI. 
+    #credential = ManagedIdentityCredential(client_id = "1133145e-4000-4719-957b-5abd09c56c48") # use a user-assigned managed identity
+    logs_query_client = LogsQueryClient(credential)
+    
+    ## convert params
+    starttime = datetime.strptime(p.starttime_str, "%Y-%m-%dT%H:%M:%S")
+    endtime = datetime.strptime(p.endtime_str, "%Y-%m-%dT%H:%M:%S")
+    query = GetQuery(p.metricname)
+    query = query.format(starttime_str = p.starttime_str, endtime_str = p.endtime_str, workspaceid = p.workspaceid)
+
+    response = logs_query_client.query_workspace(
+        workspace_id="42be50a4-118c-4aca-81ae-a59709b406e0", 
+        query=query,
+        timespan=(starttime, endtime)
+        )
+    if response.status == LogsQueryStatus.SUCCESS:
+        data = response.tables
+    else:
+        # LogsQueryPartialResult
+        data = response.partial_data
+    
+    values = [] ## in case more 
+    days = []
+
+    for table in data:
+        value_idx = table.columns.index(p.metricname) # assume that the query always return a column called metricname (need to be more flexible)
+        day_idx = table.columns.index("Day") # assume that the query always return a column called "Day"
+        for row in table.rows:
+            value = row[value_idx] # float type
+            day = row[day_idx] # datetime type
+            values.append(value)
+            days.append(day)
+    return days, values

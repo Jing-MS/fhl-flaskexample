@@ -1,0 +1,25 @@
+AppEvents
+| where Name == 'TaskSucceeded'
+| extend logtime = todatetime(Properties.LogTime)
+| where logtime between (datetime("{starttime_str}") .. datetime("{endtime_str}"))
+| where Properties.WorkspaceId == "{workspaceid}"
+| extend AnalysisType = tostring(Properties.AnalysisType)
+| where Properties.AnalysisType == "AB"
+| extend 
+    taskId = tostring(Properties.AnalysisTaskId),
+    taskTime = todouble(Measurements.TaskTime),
+    DataWaitTime = todouble(Measurements.DataCheckTime),
+    JobRuntime = todouble(Measurements.TotalRunningTime),
+    ExpQueuetime = todouble(Measurements.JobQueueTime),
+    FabricQueueTime = todouble(Measurements.TotalQueuedTime)
+| summarize arg_max(logtime, taskTime, DataWaitTime, JobRuntime, ExpQueuetime, FabricQueueTime) by taskId
+| extend Day = startofday(logtime)
+| summarize 
+    ABTaskE2ETime = round(percentile(taskTime / 60 / 60, 90), 3),
+    P90_DataWaitTime = round(percentile(DataWaitTime / 60 / 60, 90), 3),
+    P90_JobRuntime = round(percentile(JobRuntime / 60 / 60, 90), 3),
+    P90_ExpQueuetime = round(percentile(ExpQueuetime / 60 / 60, 90), 3),
+    P90_FabricQueueTime= round(percentile(FabricQueueTime / 60 / 60, 90), 3)
+    by Day
+| order by Day asc
+

@@ -1,0 +1,12 @@
+AppEvents
+| extend logtime = todatetime(Properties.LogTime)
+| where logtime between (datetime("{starttime_str}") .. datetime("{endtime_str}"))
+| where Name in ("TaskSucceeded", "TaskFailed", "TaskCancelled") 
+| where Properties.WorkspaceId == "{workspaceid}"
+| where Properties.AnalysisType == "AB"
+| summarize arg_max(logtime, Name) by taskId = tostring(Properties.AnalysisTaskId)
+| extend Day = startofday(logtime)
+| summarize 
+    ABTaskCancelRate = round(countif(Name == "TaskCancelled") * 100.0 / count(), 3)
+    by Day
+| order by Day asc
