@@ -26,10 +26,10 @@ def get_chart():
     {"id": "9", "url": "https://example.com/job/9"},
     {"id": "10", "url": "https://example.com/job/10"}
   ]
-    return render_template("index.html", {"request": request\
-                  , "labels": labels, "data": data, "jobs": jobs\
-                    , "labels_jobcount": labels_jobcount, "data_jobcount": data_jobcount\
-                      , "labels_token": labels_token, "data_token": data_token})
+    return render_template("index.html", request = request\
+                  , labels = labels, data = data, jobs = jobs\
+                    , labels_jobcount = labels_jobcount, data_jobcount = data_jobcount\
+                      , labels_token = labels_token, data_token = data_token)
 
 # dummy change
 if __name__ == '__main__':  
