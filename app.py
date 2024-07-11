@@ -89,7 +89,7 @@ class Params(BaseModel):
         return value
 
 def GetQuery(metricname: str) -> str:
-    with open(f".\metrics\{metricname}.txt", "r") as file:
+    with open(f"./metrics/{metricname}.txt", "r") as file:
         query = file.read()
     return query
     
