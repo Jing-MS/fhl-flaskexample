@@ -1,7 +1,7 @@
 from flask import (Flask, render_template, request)
 from pydantic import BaseModel, field_validator
 from datetime import datetime, timedelta, timezone
-import uuid
+# import uuid
 from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from applicationinsights.flask.ext import AppInsights
@@ -56,13 +56,13 @@ class Params(BaseModel):
     starttime_str: str
     endtime_str: str
 
-    @field_validator("workspaceid")
-    def validate_workspaceid(cls, value):
-        try:
-            uuid.UUID(value, version=4)
-        except ValueError:
-            raise ValueError(f"{value} is not a valid GUID")
-        return value
+    # @field_validator("workspaceid")
+    # def validate_workspaceid(cls, value):
+    #     try:
+    #         uuid.UUID(value, version=4)
+    #     except ValueError:
+    #         raise ValueError(f"{value} is not a valid GUID")
+    #     return value
 
     @field_validator("starttime_str")
     def validate_starttime(cls, value):
