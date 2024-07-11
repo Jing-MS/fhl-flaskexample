@@ -4,8 +4,15 @@ from datetime import datetime, timedelta, timezone
 import uuid
 from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
+from applicationinsights.flask.ext import AppInsights
+import logging
 
 app = Flask(__name__)
+
+# Set up Application Insights for the web app
+app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = 'e813553d-3352-4bd7-bb2d-843b95d0b2c3'
+appinsights = AppInsights(app)
+app.logger.setLevel(logging.DEBUG)
 
 @app.route("/")
 def get_chart():
@@ -32,6 +39,9 @@ def get_chart():
     {"id": "9", "url": "https://example.com/job/9"},
     {"id": "10", "url": "https://example.com/job/10"}
   ]
+    
+    appinsights.flush() # force flushing application insights handler
+
     return render_template("index.html", request = request\
                   , labels = labels, data = data, jobs = jobs\
                     , labels_jobcount = labels_jobcount, data_jobcount = data_jobcount\
@@ -85,17 +95,20 @@ def GetQuery(metricname: str) -> str:
     
 def QueryTaskMonitoringLog(p: Params):
 
+    app.logger.debug('Create Log Analytics client')
     ## authenticate
     credential = DefaultAzureCredential() # after pushing to the Azure cloud, this function will use the MSI instead. Please remember to assign the masterreader's role to the MSI. 
     # credential = ManagedIdentityCredential(client_id = "1133145e-4000-4719-957b-5abd09c56c48") # use a user-assigned managed identity
     logs_query_client = LogsQueryClient(credential)
     
+    app.logger.debug('Initialize variables used in the query')
     ## convert params
     starttime = datetime.strptime(p.starttime_str, "%Y-%m-%dT%H:%M:%S")
     endtime = datetime.strptime(p.endtime_str, "%Y-%m-%dT%H:%M:%S")
     query = GetQuery(p.metricname)
     query = query.format(starttime_str = p.starttime_str, endtime_str = p.endtime_str, workspaceid = p.workspaceid)
 
+    app.logger.debug('Fetch data from the TML')
     response = logs_query_client.query_workspace(
         workspace_id="42be50a4-118c-4aca-81ae-a59709b406e0", 
         query=query,
@@ -110,6 +123,7 @@ def QueryTaskMonitoringLog(p: Params):
     values = [] ## in case more 
     days = []
 
+    app.logger.debug('Reformat the output')
     for table in data:
         value_idx = table.columns.index(p.metricname) # assume that the query always return a column called metricname (need to be more flexible)
         day_idx = table.columns.index("Day") # assume that the query always return a column called "Day"
