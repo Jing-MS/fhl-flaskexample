@@ -6,6 +6,7 @@ from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from applicationinsights.flask.ext import AppInsights
 import logging
+import os
 
 app = Flask(__name__)
 
@@ -89,6 +90,14 @@ class Params(BaseModel):
         return value
 
 def GetQuery(metricname: str) -> str:
+    
+    ## debugging file not found error
+    current_dir = os.getcwd()
+    files = os.listdir(current_dir)
+    metricsfiles = os.listdir(f"{current_dir}/metrics")
+    app.logger.debug(f"Files in the current directory: {', '.join(files)}")
+    app.logger.debug(f"Files in the metrics folder: {', '.join(metricsfiles)}")
+
     with open(f"./metrics/{metricname}.txt", "r") as file:
         query = file.read()
     return query
