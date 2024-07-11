@@ -1,0 +1,17 @@
+AppEvents
+| extend Logtime = todatetime(Properties.LogTime)
+| where Logtime between (datetime("{starttime_str}") .. datetime("{endtime_str}"))
+| where Name in ("TaskSucceeded", "TaskFailed", "TaskCancelled") 
+| where Properties.WorkspaceId == "{workspaceid}"
+| where Properties.AnalysisType == "AB"
+| extend
+    AnalysisTemplate = tostring(Properties.AnalysisTemplate),
+    DataSource = tostring(Properties.DataSourceName),
+    TaskUrl = strcat("https://exp.microsoft.com/analysis/", tostring(Properties.ExperimentStepId), "/study/", tostring(Properties.AnalysisStudyId), "/task/", tostring(Properties.AnalysisTaskId), "/logs?workspaceId=", tostring(Properties.WorkspaceId)),
+    ErrorCategory = tostring(Properties.ErrorCategory),
+    StatusDescription = tostring(Properties.StatusDescription)
+| where not(ErrorCategory contains "User Error")
+| summarize arg_max(Logtime, Name, ErrorCategory, StatusDescription) by TaskUrl, AnalysisTemplate, DataSource
+| where Name in ("TaskFailed", "TaskCancelled")
+| project Logtime, TaskUrl, AnalysisTemplate, DataSource, Name, StatusDescription
+| take 2

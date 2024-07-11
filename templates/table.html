@@ -4,20 +4,37 @@
                 <thead>
                     <tr class="text-left">
                         <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
-                            Job Id
+                            LogTime
                         </th>
                         <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
-                            Job URL
+                            TaskUrl
                         </th>
+                        <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
+                            AnalysisTemplate
+                        </th>
+                        <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
+                            DataSource
+                        </th>
+                        <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
+                            Name
+                        </th>
+                        <th class="py-2 px-3 sticky top-0 border-b border-gray-200 bg-gray-100">
+                            StatusDescription
+                        </th>
+
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in jobs %}
                     <tr>
-                        <td class="py-2 px-3 border-b border-gray-200">{{ job.id }}</td>
+                        <td class="py-2 px-3 border-b border-gray-200">{{ job.Logtime }}</td>
                         <td class="py-2 px-3 border-b border-gray-200">
-                            <a href="{{ job.url }}" class="text-blue-500 hover:text-blue-600">{{ job.url }}</a>
+                            <a href="{{ job.TaskUrl }}" class="text-blue-500 hover:text-blue-600">{{ job.TaskUrl }}</a>
                         </td>
+                        <td class="py-2 px-3 border-b border-gray-200">{{ job.AnalysisTemplate }}</td>
+                        <td class="py-2 px-3 border-b border-gray-200">{{ job.DataSource }}</td>
+                        <td class="py-2 px-3 border-b border-gray-200">{{ job.Name }}</td>
+                        <td class="py-2 px-3 border-b border-gray-200">{{ job.StatusDescription }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
