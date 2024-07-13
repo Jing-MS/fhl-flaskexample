@@ -1,61 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple FastAPI Server</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/htmx.org"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="flex">
-
-<!-- Sidebar -->
-<div class="w-1/10 bg-gray-800 text-white p-4 h-screen flex flex-col justify-between">
-  <div>
-    <div class="mb-4">
-        <h3 class="text-lg font-bold">Compute Health</h3>
-    </div>
-    <hr>
-    <ul>
-        <li class="m-4">Job Health</li>
-        <li class="m-4">Task Health</li>
-    </ul>
-  </div>
-  <div>
-    <hr>
-    <ul>
-        <li>Documentation</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Main Content -->
-<div class="w-9/10 p-4 flex-grow">
-  <div class="flex items-center mb-4">
-      <div class="flex-grow mr-4">
-          <label for="workspaceId" class="block">Workspace ID</label>
-          <input type="text" id="workspaceId" placeholder="Enter UUID" class="border p-2 w-full rounded-md">
-      </div>
-      <div>
-          <label for="startDate" class="block">Start Date</label>
-          <input type="date" id="startDate" class="border p-2 rounded-md">
-      </div>
-      <div class="ml-4 mr-4">
-          <label for="endDate" class="block">End Date</label>
-          <input type="date" id="endDate" class="border p-2 rounded-md">
-      </div>
-      <button hx-get="/get" hx-params="workspaceId, startDate, endDate" class="bg-blue-500 text-white p-2 mt-6 rounded-md">Submit</button>
-  </div>
-    <!-- Include Charts Template -->
-  <div class="flex">
+{% extends "base.html" %}
+{% block charts %}
     {% include 'latency.html' %}
     {% include 'jobcounts.html' %}
     {% include 'jobtokens.html' %}
-    
-  </div>
-    <!-- Include Table Template -->
+{% endblock %}
+{% block tables %}
     {% include 'table.html' %}
-</div>
-</body>
-</html>
+{% endblock %}
