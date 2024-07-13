@@ -1,4 +1,4 @@
-from flask import (Flask, render_template, request)
+from flask import Flask, render_template, request, redirect, url_for, session
 from pydantic import BaseModel, field_validator
 from datetime import datetime, timedelta, timezone
 # import uuid
@@ -9,15 +9,42 @@ import logging
 import os
 
 app = Flask(__name__)
+app.secret_key = "computehealth"
 
 # Set up Application Insights for the web app
 app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = 'e813553d-3352-4bd7-bb2d-843b95d0b2c3'
 appinsights = AppInsights(app)
 app.logger.setLevel(logging.DEBUG)
 
-@app.route("/")
+# This makes datetime, timedelta, and timezone available in all templates
+@app.context_processor
+def inject_datetime():
+    return dict(datetime=datetime, timedelta=timedelta, timezone=timezone)
+
+
+@app.route("/", methods = ["POST", "GET"])
+def get_params():
+    ## set default values
+    if "workspaceId" not in session:
+        session["workspaceId"] = "f38e815f-79eb-4d78-8a05-2dff4e55453f" 
+    if "startTime" not in session:
+        session["startTime"] = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+    if "endTime" not in session:
+        session["endTime"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    if request.method == "POST":
+        session["workspaceId"] = request.form["workspaceId"]
+        session["startTime"] = request.form["startTime"]
+        session["endTime"] = request.form["endTime"]
+        return redirect(url_for("get_chart"))
+    else:
+        return render_template("landing.html", workspaceId=session["workspaceId"], startTime=session["startTime"], endTime=session["endTime"])
+
+@app.route("/charts", methods = ["POST","GET"])
 def get_chart():
-    
+    if request.method == "POST":
+        session["workspaceId"] = request.form["workspaceId"]
+        session["startTime"] = request.form["startTime"]
+        session["endTime"] = request.form["endTime"]
     app.logger.debug('Create Log Analytics client')
     ## authenticate
     credential = DefaultAzureCredential() # after pushing to the Azure cloud, this function will use the MSI instead. Please remember to assign the masterreader's role to the MSI. 
@@ -25,24 +52,25 @@ def get_chart():
     logs_query_client = LogsQueryClient(credential)
 
     # Data to be passed to the template
-    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="UserErrorExcludedABTaskFailureRate", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    p = Params(workspaceid=session["workspaceId"], metricname="UserErrorExcludedABTaskFailureRate", starttime_str=session["startTime"], endtime_str=session["endTime"])
     labels, data = GetMetric(p, logs_query_client)
 
-    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="ABTaskCancelRate", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    p = Params(workspaceid=session["workspaceId"], metricname="ABTaskCancelRate", starttime_str=session["startTime"], endtime_str=session["endTime"])
     labels_jobcount, data_jobcount = GetMetric(p, logs_query_client)
 
-    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="ABTaskE2ETime", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    p = Params(workspaceid=session["workspaceId"], metricname="ABTaskE2ETime", starttime_str=session["startTime"], endtime_str=session["endTime"])
     labels_token, data_token = GetMetric(p, logs_query_client)
 
-    p = Params(workspaceid="f38e815f-79eb-4d78-8a05-2dff4e55453f", metricname="DebugInfo_FailedAndCancelledABTasks", starttime_str="2024-06-01T00:00:00", endtime_str="2024-06-07T00:00:00")
+    p = Params(workspaceid=session["workspaceId"], metricname="DebugInfo_FailedAndCancelledABTasks", starttime_str=session["startTime"], endtime_str=session["endTime"])
     jobs = GetDebugInfo(p, logs_query_client)
     
     appinsights.flush() # force flushing application insights handler
 
     return render_template("index.html", request = request\
-                  , labels = labels, data = data, jobs = jobs\
+                , labels = labels, data = data, jobs = jobs\
                     , labels_jobcount = labels_jobcount, data_jobcount = data_jobcount\
-                      , labels_token = labels_token, data_token = data_token)
+                    , labels_token = labels_token, data_token = data_token\
+                        , workspaceId = session["workspaceId"], startTime = session["startTime"], endTime = session["endTime"])
 
 if __name__ == '__main__':  
    app.run()
@@ -53,7 +81,7 @@ class Params(BaseModel):
     starttime_str: str
     endtime_str: str
 
-    # @field_validator("workspaceid")
+    # @field_validator("workspaceid") 
     # def validate_workspaceid(cls, value):
     #     try:
     #         uuid.UUID(value, version=4)
@@ -156,5 +184,5 @@ def GetDebugInfo(p: Params, logs_query_client):
         cols = table.columns
         for row in table.rows:
             debuginfo.append(dict(zip(cols, row)))
-    print(debuginfo)
+
     return debuginfo
